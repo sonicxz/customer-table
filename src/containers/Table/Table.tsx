@@ -1,4 +1,4 @@
-import React, { useState, MouseEvent, ChangeEvent } from 'react';
+import React, { useState, MouseEvent, ChangeEvent, FC } from 'react';
 import {
 	TableContainer,
 	TableCell,
@@ -17,9 +17,10 @@ import {
 	FormControlLabel,
 	FormGroup,
 } from '@material-ui/core';
-import { useFetchCustomer } from '../../hooks';
+import { useCustomerContext } from '../../hooks';
 import { TablePaginationActions } from '.';
-import { Bid } from '../../repos';
+import { Bid, Routes } from '../../repos';
+import { RouteComponentProps, navigate } from '@reach/router';
 
 const useStyles = makeStyles({
 	table: {
@@ -28,16 +29,19 @@ const useStyles = makeStyles({
 	avatar: {
 		marginRight: '1rem',
 	},
+	row: {
+		cursor: 'pointer',
+	},
 });
 
-const Table = () => {
+interface TableProps extends RouteComponentProps {}
+const Table: FC<TableProps> = () => {
 	const classes = useStyles();
-	const customerData = useFetchCustomer();
+	const { customerData, setCustomer } = useCustomerContext();
 	const [page, setPage] = useState(0);
 	const [rowsPerPage, setRowsPerPage] = useState(5);
 	const [isBidSortMax = false, setBidSortMax] = useState<boolean>();
-	// const emptyRows =
-	// 	rowsPerPage - Math.min(rowsPerPage, rows.length - page * rowsPerPage);
+
 	const pageChangeHandler = (
 		event: MouseEvent<HTMLButtonElement> | null,
 		newPage: number
@@ -77,81 +81,91 @@ const Table = () => {
 	};
 
 	return (
-		<TableContainer component={Paper}>
-			{/*@ts-ignore*/}
-			<MuiTable className={classes.table}>
-				<TableHead>
-					<TableRow>
-						<TableCell>Customer Name</TableCell>
-						<TableCell>Email</TableCell>
-						<TableCell>Phone</TableCell>
-						<TableCell>Premium</TableCell>
-						<TableCell>
-							<FormGroup row>
-								<FormControlLabel
-									control={
-										<Switch
-											checked={isBidSortMax}
-											onChange={() => setBidSortMax((prev) => !prev)}
-											name="BidSort"
-										/>
-									}
-									label={isBidSortMax ? 'Max Bid' : 'Min Bid'}
-								/>
-							</FormGroup>
-						</TableCell>
-					</TableRow>
-				</TableHead>
-				<TableBody>
-					{(customerData && rowsPerPage > 0
-						? customerData.slice(
-								page * rowsPerPage,
-								page * rowsPerPage + rowsPerPage
-						  )
-						: customerData
-					)?.map((customer, index) => {
-						return (
-							<TableRow key={customer.id}>
-								<TableCell>
-									<Box display="flex" alignItems="center">
-										<Avatar
-											alt="customer-avatar"
-											className={classes.avatar}
-											src={customer.avatarUrl}
-										/>
-										{`${customer.firstname} ${customer.lastname}`}
-									</Box>
-								</TableCell>
-								<TableCell>{customer.email}</TableCell>
-								<TableCell>{customer.phone}</TableCell>
-								<TableCell>
-									{customer.hasPremium ? 'Has Premium' : 'No Premium'}
-								</TableCell>
-								<TableCell>{bidsSorter(customer.bids)}</TableCell>
-							</TableRow>
-						);
-					})}
-				</TableBody>
-				<TableFooter>
-					<TableRow>
-						<TablePagination
-							rowsPerPageOptions={[5, 10, 15, { label: 'All', value: -1 }]}
-							colSpan={3}
-							count={customerData.length}
-							rowsPerPage={rowsPerPage}
-							page={page}
-							SelectProps={{
-								inputProps: { 'aria-label': 'rows per page' },
-								native: true,
-							}}
-							onChangePage={pageChangeHandler}
-							onChangeRowsPerPage={rowsPerPageChangeHandler}
-							ActionsComponent={TablePaginationActions}
-						/>
-					</TableRow>
-				</TableFooter>
-			</MuiTable>
-		</TableContainer>
+		<>
+			<h1>Customer List</h1>
+			<TableContainer component={Paper}>
+				{/*@ts-ignore*/}
+				<MuiTable className={classes.table}>
+					<TableHead>
+						<TableRow>
+							<TableCell>Customer Name</TableCell>
+							<TableCell>Email</TableCell>
+							<TableCell>Phone</TableCell>
+							<TableCell>Premium</TableCell>
+							<TableCell>
+								<FormGroup row>
+									<FormControlLabel
+										control={
+											<Switch
+												checked={isBidSortMax}
+												onChange={() => setBidSortMax((prev) => !prev)}
+												name="BidSort"
+											/>
+										}
+										label={isBidSortMax ? 'Max Bid' : 'Min Bid'}
+									/>
+								</FormGroup>
+							</TableCell>
+						</TableRow>
+					</TableHead>
+					<TableBody>
+						{(customerData && rowsPerPage > 0
+							? customerData.slice(
+									page * rowsPerPage,
+									page * rowsPerPage + rowsPerPage
+							  )
+							: customerData
+						)?.map((customer, index) => {
+							return (
+								<TableRow
+									key={customer.id}
+									className={classes.row}
+									onClick={() => {
+										setCustomer(customer);
+										navigate(Routes.Bids);
+									}}
+								>
+									<TableCell>
+										<Box display="flex" alignItems="center">
+											<Avatar
+												alt="customer-avatar"
+												className={classes.avatar}
+												src={customer.avatarUrl}
+											/>
+											{`${customer.firstname} ${customer.lastname}`}
+										</Box>
+									</TableCell>
+									<TableCell>{customer.email}</TableCell>
+									<TableCell>{customer.phone}</TableCell>
+									<TableCell>
+										{customer.hasPremium ? 'Has Premium' : 'No Premium'}
+									</TableCell>
+									<TableCell>{bidsSorter(customer.bids)}</TableCell>
+								</TableRow>
+							);
+						})}
+					</TableBody>
+					<TableFooter>
+						<TableRow>
+							<TablePagination
+								rowsPerPageOptions={[5, 10, 15, { label: 'All', value: -1 }]}
+								colSpan={3}
+								count={customerData.length}
+								rowsPerPage={rowsPerPage}
+								page={page}
+								SelectProps={{
+									inputProps: { 'aria-label': 'rows per page' },
+									native: true,
+								}}
+								onChangePage={pageChangeHandler}
+								onChangeRowsPerPage={rowsPerPageChangeHandler}
+								ActionsComponent={TablePaginationActions}
+							/>
+						</TableRow>
+					</TableFooter>
+				</MuiTable>
+			</TableContainer>
+		</>
 	);
 };
 
